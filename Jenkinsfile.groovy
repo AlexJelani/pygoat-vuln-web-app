@@ -45,11 +45,27 @@ pipeline {
                         // 'catchError' mimics 'continue-on-error: true'. If leaks are found,
                         // the stage is marked as UNSTABLE, but the pipeline continues.
                         catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
-                            sh "docker run --rm -v ${pwd()}:/repo ghcr.io/gitleaks/gitleaks:v8.18.2 detect --source /repo --verbose --report-path gitleaks-report.json"
+                            sh "docker run --rm -v ${pwd()}:/repo ghcr.io/gitleaks/gitleaks:v8.18.2 detect --source /repo --verbose --report-path /repo/gitleaks-report.json"
                         }
 
-                        // Save the gitleaks report as a build artifact.
+                        // Save the gitleaks report as a build artifact and publish as HTML
                         archiveArtifacts artifacts: 'gitleaks-report.json', allowEmptyArchive: true
+                        
+                        // Convert JSON report to readable format and publish
+                        script {
+                            if (fileExists('gitleaks-report.json')) {
+                                sh 'cat gitleaks-report.json | python3 -m json.tool > gitleaks-report-formatted.json'
+                                publishHTML([
+                                    allowMissing: false,
+                                    alwaysLinkToLastBuild: true,
+                                    keepAll: true,
+                                    reportDir: '.',
+                                    reportFiles: 'gitleaks-report-formatted.json',
+                                    reportName: 'Gitleaks Security Report',
+                                    reportTitles: 'Gitleaks Scan Results'
+                                ])
+                            }
+                        }
                     }
                 }
             }
