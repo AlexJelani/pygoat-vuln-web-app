@@ -38,13 +38,16 @@ pipeline {
                     steps {
                         checkout scm
                         script {
+                            // Ensure we have the full git history for a complete scan
+                            sh 'git fetch --unshallow || echo "Already a full clone"'
+
                             // Create reports directory
                             sh 'mkdir -p reports'
                             
                             // Pull the latest Gitleaks image
                             sh 'docker pull ghcr.io/gitleaks/gitleaks:latest'
                             
-                            // Run scan, capturing the exit code without failing the pipeline immediately.
+                            // Run scan with proper permissions and error handling
                             def scanResult = sh(
                                 script: """
                                 docker run --rm --user "\$(id -u):\$(id -g)" \\
@@ -60,14 +63,27 @@ pipeline {
                                 returnStatus: true
                             )
                             
-                            // Process results based on the exit code
+                            // Process results
                             if (scanResult != 0) {
                                 currentBuild.result = 'UNSTABLE'
-                                echo '🛑 Gitleaks scan detected potential secrets! Review the report.'
-                                archiveArtifacts artifacts: 'reports/gitleaks-report.json', allowEmptyArchive: true
                                 
-                                // Print formatted JSON report to console (requires jq on the agent)
-                                sh 'jq . reports/gitleaks-report.json || cat reports/gitleaks-report.json'
+                                // Verify report exists before trying to archive
+                                if (fileExists('reports/gitleaks-report.json')) {
+                                    echo '🛑 Gitleaks scan detected potential secrets! Review the report.'
+                                    archiveArtifacts artifacts: 'reports/gitleaks-report.json'
+                                    
+                                    // Try to display report. Note: This requires the agent to have passwordless sudo rights.
+                                    sh '''
+                                        if ! command -v jq > /dev/null; then
+                                            echo "jq not found, attempting to install..."
+                                            sudo apt-get update && sudo apt-get install -y jq || true
+                                        fi
+                                        jq . reports/gitleaks-report.json || cat reports/gitleaks-report.json
+                                    '''
+                                } else {
+                                    echo '⚠️ Gitleaks failed but no report was generated. This often indicates a permissions issue.'
+                                    echo 'Check that the Jenkins user can run docker and has permissions to the workspace directory.'
+                                }
                             } else {
                                 echo '✅ Gitleaks scan passed with no secrets detected.'
                             }
