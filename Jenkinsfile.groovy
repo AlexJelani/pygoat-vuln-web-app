@@ -36,9 +36,7 @@ pipeline {
                 }
                 stage('Gitleaks Scan') {
                     steps {
-                        // Checkout code with full history for a complete scan.
-                        // The 'unshallow' command is needed because Jenkins often does a shallow clone.
-                        checkout scm
+                        // Ensure we have full history for a complete scan
                         sh 'git fetch --unshallow || echo "Already a full clone"'
 
                         // Run Gitleaks using its Docker image.
