@@ -36,31 +36,27 @@ pipeline {
                 }
                 stage('Gitleaks Scan') {
                     steps {
-                        // Checkout the source code into the workspace for this stage
                         checkout scm
-
                         script {
-                            // Ensure we have full history for a complete scan
                             sh 'git fetch --unshallow || echo "Already a full clone"'
-                            
-                            // Pull the Gitleaks image to ensure we're using the specified version
                             sh 'docker pull ghcr.io/gitleaks/gitleaks:latest'
                             
                             try {
-                                // Run Gitleaks. This will throw an exception if secrets are found (non-zero exit code).
-                                // We run the container as the current user ($(id -u):$(id -g)) to avoid permission issues with the mounted workspace.
-                                sh "docker run --rm --user \"\$(id -u):\$(id -g)\" -v \"${pwd()}:/repo\" ghcr.io/gitleaks/gitleaks:latest detect --source /repo --verbose --report-format json --report-path /repo/gitleaks-report.json"
+                                // Fixed command with proper Git repo mounting
+                                sh """
+                                docker run --rm --user "\$(id -u):\$(id -g)" \
+                                -v "${pwd()}:/repo" \
+                                -v "${pwd()}/.git:/repo/.git" \
+                                -e GIT_DISCOVERY_ACROSS_FILESYSTEM=true \
+                                ghcr.io/gitleaks/gitleaks:latest \
+                                detect --source /repo --verbose --report-format json --report-path /repo/gitleaks-report.json
+                                """
                                 echo '✅ No secrets detected by Gitleaks.'
                             } catch (any) {
-                                // This block executes if Gitleaks finds secrets and exits with a non-zero code.
                                 currentBuild.result = 'UNSTABLE'
                                 echo "🛑 Secrets detected! Review the Gitleaks report artifact. 🛑"
-
-                                // Archive the report and pretty-print it to the console for immediate feedback
                                 archiveArtifacts artifacts: 'gitleaks-report.json', allowEmptyArchive: true
                                 sh 'cat gitleaks-report.json | python3 -m json.tool'
-
-                                // Publish an HTML report. This is optional and can be removed if you don't use the HTML Publisher plugin.
                                 publishHTML([
                                     allowMissing: false,
                                     alwaysLinkToLastBuild: true,
