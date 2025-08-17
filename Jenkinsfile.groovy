@@ -24,9 +24,9 @@ pipeline {
                         // Checkout the source code
                         checkout scm
 
-                        // Create and use a virtual environment to avoid system package conflicts (PEP 668).
-                        // The commands are in a single 'sh' block so the activated environment persists.
+                        // Install python3-venv if needed and create virtual environment
                         sh '''
+                            apt-get update && apt-get install -y python3-venv || true
                             python3 -m venv venv
                             . venv/bin/activate
                             pip install -r requirements.txt
@@ -45,7 +45,7 @@ pipeline {
                         // 'catchError' mimics 'continue-on-error: true'. If leaks are found,
                         // the stage is marked as UNSTABLE, but the pipeline continues.
                         catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
-                            sh "docker run --rm -v ${pwd()}:/repo zricethezav/gitleaks:v8.18.2 detect --source /repo --verbose --report-path gitleaks-report.json"
+                            sh "docker run --rm -v ${pwd()}:/repo ghcr.io/gitleaks/gitleaks:v8.18.2 detect --source /repo --verbose --report-path gitleaks-report.json"
                         }
 
                         // Save the gitleaks report as a build artifact.
