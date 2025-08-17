@@ -36,33 +36,36 @@ pipeline {
                 }
                 stage('Gitleaks Scan') {
                     steps {
-                        // Ensure we have full history for a complete scan
-                        sh 'git fetch --unshallow || echo "Already a full clone"'
-
-                        // Run Gitleaks to scan full git history
-                        catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
-                            sh "docker run --rm -v ${pwd()}:/repo -v ${pwd()}/.git:/repo/.git ghcr.io/gitleaks/gitleaks:v8.18.2 detect --source /repo --verbose --report-format json --report-path /repo/gitleaks-report.json"
-                        }
-
-                        // Save the gitleaks report as a build artifact and publish as HTML
-                        archiveArtifacts artifacts: 'gitleaks-report.json', allowEmptyArchive: true
-                        
-                        // Display and publish results
                         script {
-                            if (fileExists('gitleaks-report.json')) {
-                                sh 'echo "🛑 Secrets detected! 🛑" && cat gitleaks-report.json'
-                                sh 'cat gitleaks-report.json | python3 -m json.tool > gitleaks-report-formatted.json'
+                            // Ensure we have full history for a complete scan
+                            sh 'git fetch --unshallow || echo "Already a full clone"'
+                            
+                            // Pull the Gitleaks image to ensure we're using the specified version
+                            sh 'docker pull zricethezav/gitleaks:latest'
+                            
+                            try {
+                                // Run Gitleaks. This will throw an exception if secrets are found (non-zero exit code).
+                                sh "docker run --rm -v ${pwd()}:/repo zricethezav/gitleaks:latest detect --source /repo --verbose --report-format json --report-path /repo/gitleaks-report.json"
+                                echo '✅ No secrets detected by Gitleaks.'
+                            } catch (any) {
+                                // This block executes if Gitleaks finds secrets and exits with a non-zero code.
+                                currentBuild.result = 'UNSTABLE'
+                                echo "🛑 Secrets detected! Review the Gitleaks report artifact. 🛑"
+
+                                // Archive the report and pretty-print it to the console for immediate feedback
+                                archiveArtifacts artifacts: 'gitleaks-report.json', allowEmptyArchive: true
+                                sh 'cat gitleaks-report.json | python3 -m json.tool'
+
+                                // Publish an HTML report. This is optional and can be removed if you don't use the HTML Publisher plugin.
                                 publishHTML([
                                     allowMissing: false,
                                     alwaysLinkToLastBuild: true,
                                     keepAll: true,
                                     reportDir: '.',
-                                    reportFiles: 'gitleaks-report-formatted.json',
+                                    reportFiles: 'gitleaks-report.json',
                                     reportName: 'Gitleaks Security Report',
                                     reportTitles: 'Gitleaks Scan Results'
                                 ])
-                            } else {
-                                echo 'No secrets detected'
                             }
                         }
                     }
