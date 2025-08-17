@@ -24,9 +24,9 @@ pipeline {
                         // Checkout the source code
                         checkout scm
 
-                        // Install python3-venv if needed and create virtual environment
+                        // Install required system packages and create virtual environment
                         sh '''
-                            apt-get update && apt-get install -y python3-venv || true
+                            apt-get update && apt-get install -y python3-venv libpq-dev python3-dev gcc || true
                             python3 -m venv venv
                             . venv/bin/activate
                             pip install -r requirements.txt
