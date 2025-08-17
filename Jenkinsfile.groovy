@@ -44,11 +44,12 @@ pipeline {
                             sh 'git fetch --unshallow || echo "Already a full clone"'
                             
                             // Pull the Gitleaks image to ensure we're using the specified version
-                            sh 'docker pull zricethezav/gitleaks:latest'
+                            sh 'docker pull ghcr.io/gitleaks/gitleaks:latest'
                             
                             try {
                                 // Run Gitleaks. This will throw an exception if secrets are found (non-zero exit code).
-                                sh "docker run --rm -v ${pwd()}:/repo zricethezav/gitleaks:latest detect --source /repo --verbose --report-format json --report-path /repo/gitleaks-report.json"
+                                // We run the container as the current user ($(id -u):$(id -g)) to avoid permission issues with the mounted workspace.
+                                sh "docker run --rm --user \"$(id -u):$(id -g)\" -v \"${pwd()}:/repo\" ghcr.io/gitleaks/gitleaks:latest detect --source /repo --verbose --report-format json --report-path /repo/gitleaks-report.json"
                                 echo '✅ No secrets detected by Gitleaks.'
                             } catch (any) {
                                 // This block executes if Gitleaks finds secrets and exits with a non-zero code.
