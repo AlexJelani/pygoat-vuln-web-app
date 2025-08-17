@@ -36,6 +36,9 @@ pipeline {
                 }
                 stage('Gitleaks Scan') {
                     steps {
+                        // Checkout the source code into the workspace for this stage
+                        checkout scm
+
                         script {
                             // Ensure we have full history for a complete scan
                             sh 'git fetch --unshallow || echo "Already a full clone"'
