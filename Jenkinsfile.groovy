@@ -38,11 +38,12 @@ pipeline {
                     steps {
                         checkout scm
                         script {
-                            // Run scan without user restrictions and write to workspace root
+                            // Run scan with git directory mounted
                             def scanResult = sh(
                                 script: """
                                 docker run --rm \\
                                     -v "${WORKSPACE}:/scan" \\
+                                    -v "${WORKSPACE}/.git:/scan/.git" \\
                                     -e GIT_DISCOVERY_ACROSS_FILESYSTEM=true \\
                                     ghcr.io/gitleaks/gitleaks:latest \\
                                     detect --source=/scan \\
