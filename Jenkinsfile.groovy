@@ -38,16 +38,18 @@ pipeline {
                     steps {
                         checkout scm
                         script {
-                            // Run scan with git directory mounted
+                            // Ensure full git history and run scan
+                            sh 'git fetch --unshallow || echo "Already full clone"'
+                            sh 'ls -la .git || echo "No .git directory"'
+                            
                             def scanResult = sh(
                                 script: """
                                 docker run --rm \\
-                                    -v "${WORKSPACE}:/scan" \\
-                                    -v "${WORKSPACE}/.git:/scan/.git" \\
-                                    -e GIT_DISCOVERY_ACROSS_FILESYSTEM=true \\
+                                    -v "${WORKSPACE}:/repo" \\
+                                    -w /repo \\
                                     ghcr.io/gitleaks/gitleaks:latest \\
-                                    detect --source=/scan \\
-                                    --report-path=/scan/gitleaks-report.json \\
+                                    detect --source=. \\
+                                    --report-path=gitleaks-report.json \\
                                     --report-format=json \\
                                     --verbose
                                 exit \$?
