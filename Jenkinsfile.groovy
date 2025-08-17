@@ -49,7 +49,7 @@ pipeline {
                             try {
                                 // Run Gitleaks. This will throw an exception if secrets are found (non-zero exit code).
                                 // We run the container as the current user ($(id -u):$(id -g)) to avoid permission issues with the mounted workspace.
-                                sh "docker run --rm --user \"$(id -u):$(id -g)\" -v \"${pwd()}:/repo\" ghcr.io/gitleaks/gitleaks:latest detect --source /repo --verbose --report-format json --report-path /repo/gitleaks-report.json"
+                                sh "docker run --rm --user \"\\$(id -u):\\$(id -g)\" -v \"${pwd()}:/repo\" ghcr.io/gitleaks/gitleaks:latest detect --source /repo --verbose --report-format json --report-path /repo/gitleaks-report.json"
                                 echo '✅ No secrets detected by Gitleaks.'
                             } catch (any) {
                                 // This block executes if Gitleaks finds secrets and exits with a non-zero code.
