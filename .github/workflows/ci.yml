@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
 
 env:
-  IMAGE_NAME: techworldwithnana/demo-app
-  IMAGE_TAG: juice-shop-1.1
+  IMAGE_NAME: pygoat/vuln-demo-devsec-app
+  IMAGE_TAG: pygoat-1.0
 
 jobs:
   cache:
