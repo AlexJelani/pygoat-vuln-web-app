@@ -47,7 +47,7 @@ pipeline {
                             // Run scan, capturing the exit code without failing the pipeline immediately.
                             def scanResult = sh(
                                 script: """
-                                docker run --rm --user "\\$(id -u):\\$(id -g)" \\
+                                docker run --rm --user "\$(id -u):\$(id -g)" \\
                                     -v "${WORKSPACE}:/scan" \\
                                     -e GIT_DISCOVERY_ACROSS_FILESYSTEM=true \\
                                     ghcr.io/gitleaks/gitleaks:latest \\
@@ -55,7 +55,7 @@ pipeline {
                                     --report-path=/scan/reports/gitleaks-report.json \\
                                     --report-format=json \\
                                     --verbose
-                                exit \\$?
+                                exit \$?
                                 """,
                                 returnStatus: true
                             )
