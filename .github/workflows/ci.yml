@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
 
 env:
-  IMAGE_NAME: pygoat/vuln-demo-devsec-app
-  IMAGE_TAG: pygoat-1.0
+  IMAGE_NAME: ${{ secrets.DOCKER_USER }}/pygoat
+  IMAGE_TAG: latest
 
 jobs:
   cache:
