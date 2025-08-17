@@ -30,9 +30,21 @@ jobs:
       - run: pip install -r requirements.txt
       - run: python manage.py test
 
+  gitleaks:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Gitleaks Scan
+        uses: gitleaks/gitleaks-action@v2
+        with:
+          verbose: true
+
   build:
     runs-on: ubuntu-latest
-    needs: test
+    needs: [test, gitleaks]
     steps:
       - uses: actions/checkout@v4
       - name: Login to Docker Hub
