@@ -24,10 +24,14 @@ pipeline {
                         // Checkout the source code
                         checkout scm
 
-                        // Install dependencies and run tests.
-                        // Assumes python3 and pip are available on the agent's PATH.
-                        sh 'pip install -r requirements.txt'
-                        sh 'python manage.py test'
+                        // Create and use a virtual environment to avoid system package conflicts (PEP 668).
+                        // The commands are in a single 'sh' block so the activated environment persists.
+                        sh '''
+                            python3 -m venv venv
+                            . venv/bin/activate
+                            pip install -r requirements.txt
+                            python manage.py test
+                        '''
                     }
                 }
                 stage('Gitleaks Scan') {
