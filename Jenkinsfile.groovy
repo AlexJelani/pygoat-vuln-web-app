@@ -39,19 +39,18 @@ pipeline {
                         // Ensure we have full history for a complete scan
                         sh 'git fetch --unshallow || echo "Already a full clone"'
 
-                        // Run Gitleaks using its Docker image.
-                        // 'catchError' mimics 'continue-on-error: true'. If leaks are found,
-                        // the stage is marked as UNSTABLE, but the pipeline continues.
+                        // Run Gitleaks to scan full git history
                         catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
-                            sh "docker run --rm -v ${pwd()}:/repo ghcr.io/gitleaks/gitleaks:v8.18.2 detect --source /repo --verbose --report-path /repo/gitleaks-report.json"
+                            sh "docker run --rm -v ${pwd()}:/repo -v ${pwd()}/.git:/repo/.git ghcr.io/gitleaks/gitleaks:v8.18.2 detect --source /repo --verbose --report-format json --report-path /repo/gitleaks-report.json"
                         }
 
                         // Save the gitleaks report as a build artifact and publish as HTML
                         archiveArtifacts artifacts: 'gitleaks-report.json', allowEmptyArchive: true
                         
-                        // Convert JSON report to readable format and publish
+                        // Display and publish results
                         script {
                             if (fileExists('gitleaks-report.json')) {
+                                sh 'echo "🛑 Secrets detected! 🛑" && cat gitleaks-report.json'
                                 sh 'cat gitleaks-report.json | python3 -m json.tool > gitleaks-report-formatted.json'
                                 publishHTML([
                                     allowMissing: false,
@@ -62,6 +61,8 @@ pipeline {
                                     reportName: 'Gitleaks Security Report',
                                     reportTitles: 'Gitleaks Scan Results'
                                 ])
+                            } else {
+                                echo 'No secrets detected'
                             }
                         }
                     }
