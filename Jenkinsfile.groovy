@@ -38,34 +38,38 @@ pipeline {
                     steps {
                         checkout scm
                         script {
-                            sh 'git fetch --unshallow || echo "Already a full clone"'
+                            // Create reports directory
+                            sh 'mkdir -p reports'
+                            
+                            // Pull the latest Gitleaks image
                             sh 'docker pull ghcr.io/gitleaks/gitleaks:latest'
                             
-                            try {
-                                // Fixed command with proper Git repo mounting
-                                sh """
-                                docker run --rm --user "\$(id -u):\$(id -g)" \
-                                -v "${pwd()}:/repo" \
-                                -v "${pwd()}/.git:/repo/.git" \
-                                -e GIT_DISCOVERY_ACROSS_FILESYSTEM=true \
-                                ghcr.io/gitleaks/gitleaks:latest \
-                                detect --source /repo --verbose --report-format json --report-path /repo/gitleaks-report.json
-                                """
-                                echo '✅ No secrets detected by Gitleaks.'
-                            } catch (any) {
+                            // Run scan, capturing the exit code without failing the pipeline immediately.
+                            def scanResult = sh(
+                                script: """
+                                docker run --rm --user "\\$(id -u):\\$(id -g)" \\
+                                    -v "${WORKSPACE}:/scan" \\
+                                    -e GIT_DISCOVERY_ACROSS_FILESYSTEM=true \\
+                                    ghcr.io/gitleaks/gitleaks:latest \\
+                                    detect --source=/scan \\
+                                    --report-path=/scan/reports/gitleaks-report.json \\
+                                    --report-format=json \\
+                                    --verbose
+                                exit \\$?
+                                """,
+                                returnStatus: true
+                            )
+                            
+                            // Process results based on the exit code
+                            if (scanResult != 0) {
                                 currentBuild.result = 'UNSTABLE'
-                                echo "🛑 Secrets detected! Review the Gitleaks report artifact. 🛑"
-                                archiveArtifacts artifacts: 'gitleaks-report.json', allowEmptyArchive: true
-                                sh 'cat gitleaks-report.json | python3 -m json.tool'
-                                publishHTML([
-                                    allowMissing: false,
-                                    alwaysLinkToLastBuild: true,
-                                    keepAll: true,
-                                    reportDir: '.',
-                                    reportFiles: 'gitleaks-report.json',
-                                    reportName: 'Gitleaks Security Report',
-                                    reportTitles: 'Gitleaks Scan Results'
-                                ])
+                                echo '🛑 Gitleaks scan detected potential secrets! Review the report.'
+                                archiveArtifacts artifacts: 'reports/gitleaks-report.json', allowEmptyArchive: true
+                                
+                                // Print formatted JSON report to console (requires jq on the agent)
+                                sh 'jq . reports/gitleaks-report.json || cat reports/gitleaks-report.json'
+                            } else {
+                                echo '✅ Gitleaks scan passed with no secrets detected.'
                             }
                         }
                     }
