@@ -38,10 +38,10 @@ pipeline {
               -v "${WORKSPACE}:/workspace" \
               -w /workspace \
               ghcr.io/gitleaks/gitleaks:latest dir \
+              --source=/workspace \
               --verbose \
               --report-path=/workspace/reports/gitleaks-report.json \
-              --report-format=json \
-              /workspace
+              --report-format=json
             EXIT_CODE=$?
             set -e
             
