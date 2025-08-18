@@ -42,12 +42,12 @@ pipeline {
                         sh '''
                             REPORT_DIR="reports"
                             mkdir -p "${REPORT_DIR}"
-                            docker pull gitleaks/gitleaks:latest
+                            docker pull ghcr.io/gitleaks/gitleaks:latest
                             
                             set +e
                             docker run --rm \\
                                 -v "${WORKSPACE}:/scan" \\
-                                gitleaks/gitleaks:latest detect --source=/scan --no-git \\
+                                ghcr.io/gitleaks/gitleaks:latest detect --source=/scan --no-git \\
                                 --report-path=/scan/$REPORT_DIR/gitleaks-report.json \\
                                 --report-format=json
                             EXIT_CODE=$?
