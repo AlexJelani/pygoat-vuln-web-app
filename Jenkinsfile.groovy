@@ -63,13 +63,19 @@ pipeline {
         stage('Upload Scan results to DefectDojo') {
             steps {
                 sh '''
-                    curl -X POST "${DEFECTDOJO_URL}/api/v2/import-scan/" \
-                      -H "Authorization: Token ${DEFECTDOJO_TOKEN}" \
-                      -F "scan_type=Generic Findings Import" \
-                      -F "file=@reports/gitleaks-report.json" \
-                      -F "engagement=${DEFECTDOJO_ENGAGEMENT_ID}" \
-                      -F "verified=true" \
-                      -F "active=true" || echo "DefectDojo upload failed"
+                    if [ -f "reports/gitleaks-report.json" ]; then
+                        echo "Uploading scan results to DefectDojo..."
+                        curl -v -X POST "${DEFECTDOJO_URL}/api/v2/import-scan/" \
+                          -H "Authorization: Token ${DEFECTDOJO_TOKEN}" \
+                          -H "Content-Type: multipart/form-data" \
+                          -F "scan_type=Generic Findings Import" \
+                          -F "file=@reports/gitleaks-report.json" \
+                          -F "engagement=${DEFECTDOJO_ENGAGEMENT_ID}" \
+                          -F "verified=true" \
+                          -F "active=true" || echo "DefectDojo upload failed"
+                    else
+                        echo "No scan report found to upload"
+                    fi
                 '''
             }
         }
