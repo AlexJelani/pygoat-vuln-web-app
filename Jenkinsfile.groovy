@@ -40,9 +40,6 @@ pipeline {
                         sh 'rm -f .git/index.lock || true'
                         checkout scm
                         script {
-                            // Create reports directory with proper permissions
-                            sh 'mkdir -p reports && chmod 777 reports'
-                            
                             // Pull the latest Gitleaks image
                             sh 'docker pull ghcr.io/gitleaks/gitleaks:latest'
                             
@@ -53,10 +50,7 @@ pipeline {
                                     -v "${WORKSPACE}:/scan" \\
                                     -e GIT_DISCOVERY_ACROSS_FILESYSTEM=true \\
                                     ghcr.io/gitleaks/gitleaks:latest \\
-                                    detect --source=/scan \\
-                                    --report-path=/scan/reports/gitleaks-report.json \\
-                                    --report-format=json \\
-                                    --verbose
+                                    detect --source=/scan --verbose
                                 exit \$?
                                 """,
                                 returnStatus: true
@@ -65,19 +59,7 @@ pipeline {
                             // Process results based on the exit code
                             if (scanResult != 0) {
                                 currentBuild.result = 'UNSTABLE'
-                                echo '🛑 Gitleaks scan detected potential secrets!'
-                                
-                                // Check if report file exists and archive it
-                                sh '''
-                                    if [ -f reports/gitleaks-report.json ]; then
-                                        echo "Report file found, displaying contents:"
-                                        cat reports/gitleaks-report.json
-                                    else
-                                        echo "No report file generated - secrets detected in scan output above"
-                                    fi
-                                '''
-                                
-                                archiveArtifacts artifacts: 'reports/gitleaks-report.json', allowEmptyArchive: true
+                                echo '🛑 Gitleaks scan detected potential secrets! Check the scan output above for details.'
                             } else {
                                 echo '✅ Gitleaks scan passed with no secrets detected.'
                             }
