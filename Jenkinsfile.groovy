@@ -42,12 +42,12 @@ pipeline {
                         sh '''
                             REPORT_DIR="reports"
                             mkdir -p "${REPORT_DIR}"
-                            docker pull zricethezav/gitleaks:latest
+                            docker pull gitleaks/gitleaks:latest
                             
                             set +e
                             docker run --rm \\
                                 -v "${WORKSPACE}:/scan" \\
-                                zricethezav/gitleaks:latest detect --source=/scan \\
+                                gitleaks/gitleaks:latest detect --source=/scan --no-git \\
                                 --report-path=/scan/$REPORT_DIR/gitleaks-report.json \\
                                 --report-format=json
                             EXIT_CODE=$?
