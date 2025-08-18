@@ -68,7 +68,7 @@ pipeline {
                         curl -v -X POST "${DEFECTDOJO_URL}/api/v2/import-scan/" \
                           -H "Authorization: Token ${DEFECTDOJO_TOKEN}" \
                           -H "Content-Type: multipart/form-data" \
-                          -F "scan_type=Generic Findings Import" \
+                          -F "scan_type=JSON" \
                           -F "file=@reports/gitleaks-report.json" \
                           -F "engagement=${DEFECTDOJO_ENGAGEMENT_ID}" \
                           -F "verified=true" \
