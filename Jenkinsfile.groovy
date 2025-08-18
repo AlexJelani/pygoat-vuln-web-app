@@ -25,14 +25,14 @@ pipeline {
                         '''
                     }
                 }
-                stage('Gitleaks Scan') {
+                stage('TruffleHog Scan') {
     steps {
         sh 'rm -f .git/index.lock || true'
         checkout scm
         sh '''
             REPORT_DIR="reports"
             mkdir -p "${REPORT_DIR}"
-            docker pull zricethezav/gitleaks:latest
+            docker pull trufflesecurity/trufflehog:latest
             
             set +e
             echo "Scanning working directory in $WORKSPACE ..."
@@ -40,19 +40,17 @@ pipeline {
             docker run --rm \
               -v "${WORKSPACE}:/workspace" \
               -w /workspace \
-              zricethezav/gitleaks:latest dir \
-              --source=/workspace \
-              --verbose \
-              --report-path=/workspace/reports/gitleaks-report.json \
-              --report-format=json
+              trufflesecurity/trufflehog:latest filesystem \
+              --directory=/workspace \
+              --json > reports/trufflehog-report.json
             EXIT_CODE=$?
             set -e
             
             if [ "$EXIT_CODE" -ne 0 ]; then
-                echo "🛑 GitLeaks scan detected secrets. Please review reports/gitleaks-report.json"
-                cat reports/gitleaks-report.json || echo "Report file not found"
+                echo "🛑 TruffleHog scan detected secrets. Please review reports/trufflehog-report.json"
+                cat reports/trufflehog-report.json || echo "Report file not found"
             else
-                echo "✅ GitLeaks scan passed with no secrets detected."
+                echo "✅ TruffleHog scan passed with no secrets detected."
             fi
         '''
     }
@@ -63,13 +61,13 @@ pipeline {
         stage('Upload Scan results to DefectDojo') {
             steps {
                 sh '''
-                    if [ -f "reports/gitleaks-report.json" ]; then
+                    if [ -f "reports/trufflehog-report.json" ]; then
                         echo "Uploading scan results to DefectDojo..."
                         curl -v -X POST "${DEFECTDOJO_URL}/api/v2/import-scan/" \
                           -H "Authorization: Token ${DEFECTDOJO_TOKEN}" \
                           -H "Content-Type: multipart/form-data" \
-                          -F "scan_type=JSON" \
-                          -F "file=@reports/gitleaks-report.json" \
+                          -F "scan_type=Trufflehog Scan" \
+                          -F "file=@reports/trufflehog-report.json" \
                           -F "engagement=${DEFECTDOJO_ENGAGEMENT_ID}" \
                           -F "verified=true" \
                           -F "active=true" || echo "DefectDojo upload failed"
