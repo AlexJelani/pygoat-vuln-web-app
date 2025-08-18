@@ -48,7 +48,7 @@ pipeline {
                             docker run --rm \\
                                 -v "${WORKSPACE}:/workspace" \\
                                 -w /workspace \\
-                                ghcr.io/gitleaks/gitleaks:latest detect --source=. --verbose \
+                                ghcr.io/gitleaks/gitleaks:latest detect --source=/workspace --no-git --verbose
                                 --report-path=./reports/gitleaks-report.json \\
                                 --report-format=json
                             EXIT_CODE=$?
