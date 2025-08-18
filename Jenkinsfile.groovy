@@ -48,15 +48,6 @@ pipeline {
             EXIT_CODE=$?
             set -e
             
-            # Upload results to DefectDojo
-            curl -X POST "${DEFECTDOJO_URL}/api/v2/import-scan/" \
-              -H "Authorization: Token ${DEFECTDOJO_TOKEN}" \
-              -F "scan_type=Gitleaks JSON Report" \
-              -F "file=@reports/gitleaks-report.json" \
-              -F "engagement=${DEFECTDOJO_ENGAGEMENT_ID}" \
-              -F "verified=true" \
-              -F "active=true" || echo "DefectDojo upload failed"
-            
             if [ "$EXIT_CODE" -ne 0 ]; then
                 echo "🛑 GitLeaks scan detected secrets. Please review reports/gitleaks-report.json"
                 cat reports/gitleaks-report.json || echo "Report file not found"
@@ -67,6 +58,20 @@ pipeline {
         '''
     }
 }
+            }
+        }
+
+        stage('Upload Scan results to DefectDojo') {
+            steps {
+                sh '''
+                    curl -X POST "${DEFECTDOJO_URL}/api/v2/import-scan/" \
+                      -H "Authorization: Token ${DEFECTDOJO_TOKEN}" \
+                      -F "scan_type=Gitleaks JSON Report" \
+                      -F "file=@reports/gitleaks-report.json" \
+                      -F "engagement=${DEFECTDOJO_ENGAGEMENT_ID}" \
+                      -F "verified=true" \
+                      -F "active=true" || echo "DefectDojo upload failed"
+                '''
             }
         }
 
