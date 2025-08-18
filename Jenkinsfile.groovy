@@ -5,6 +5,9 @@ pipeline {
         DOCKER_CREDENTIALS_ID = 'dockerhub-credentials'
         DOCKER_USER           = 'alexjelani13'
         IMAGE_TAG             = 'latest'
+        DEFECTDOJO_URL        = 'http://131.186.56.105:8083'
+        DEFECTDOJO_TOKEN      = credentials('defectdojo-token')
+        DEFECTDOJO_ENGAGEMENT_ID = '1'
     }
 
     stages {
@@ -44,6 +47,15 @@ pipeline {
               --report-format=json
             EXIT_CODE=$?
             set -e
+            
+            # Upload results to DefectDojo
+            curl -X POST "${DEFECTDOJO_URL}/api/v2/import-scan/" \
+              -H "Authorization: Token ${DEFECTDOJO_TOKEN}" \
+              -F "scan_type=Gitleaks JSON Report" \
+              -F "file=@reports/gitleaks-report.json" \
+              -F "engagement=${DEFECTDOJO_ENGAGEMENT_ID}" \
+              -F "verified=true" \
+              -F "active=true" || echo "DefectDojo upload failed"
             
             if [ "$EXIT_CODE" -ne 0 ]; then
                 echo "🛑 GitLeaks scan detected secrets. Please review reports/gitleaks-report.json"
