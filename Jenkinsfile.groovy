@@ -37,7 +37,7 @@ pipeline {
             docker run --rm \
               -v "${WORKSPACE}:/workspace" \
               -w /workspace \
-              ghcr.io/gitleaks/gitleaks:latest detect \
+              ghcr.io/gitleaks/gitleaks:latest dir \
               --source=/workspace \
               --verbose \
               --report-path=/workspace/reports/gitleaks-report.json \
