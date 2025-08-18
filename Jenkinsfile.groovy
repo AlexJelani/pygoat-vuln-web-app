@@ -33,12 +33,11 @@ pipeline {
             
             set +e
             echo "Scanning working directory in $WORKSPACE ..."
-            ls -lah "${WORKSPACE}"
             
             docker run --rm \
               -v "${WORKSPACE}:/workspace" \
               -w /workspace \
-              ghcr.io/gitleaks/gitleaks:latest dir \
+              ghcr.io/gitleaks/gitleaks:latest detect \
               --source=/workspace \
               --verbose \
               --report-path=/workspace/reports/gitleaks-report.json \
@@ -48,6 +47,7 @@ pipeline {
             
             if [ "$EXIT_CODE" -ne 0 ]; then
                 echo "🛑 GitLeaks scan detected secrets. Please review reports/gitleaks-report.json"
+                cat reports/gitleaks-report.json || echo "Report file not found"
                 exit 1
             else
                 echo "✅ GitLeaks scan passed with no secrets detected."
