@@ -23,38 +23,38 @@ pipeline {
                     }
                 }
                 stage('Gitleaks Scan') {
-                    steps {
-                        sh 'rm -f .git/index.lock || true'
-                        checkout scm
-                        sh '''
-                            REPORT_DIR="reports"
-                            mkdir -p "${REPORT_DIR}"
-                            docker pull ghcr.io/gitleaks/gitleaks:latest
-                            
-                            set +e
-                            echo "Scanning in $WORKSPACE ..."
-                            ls -lah "${WORKSPACE}"
-                            
-                            docker run --rm \
-                              -v "${WORKSPACE}:/workspace" \
-                              -w /workspace \
-                              ghcr.io/gitleaks/gitleaks:latest detect \
-                              --source=/workspace \
-                              --verbose \
-                              --report-path=/workspace/reports/gitleaks-report.json \
-                              --report-format=json
-                            EXIT_CODE=$?
-                            set -e
-                            
-                            if [ "$EXIT_CODE" -ne 0 ]; then
-                                echo "🛑 GitLeaks scan detected secrets. Please review reports/gitleaks-report.json"
-                                exit 1
-                            else
-                                echo "✅ GitLeaks scan passed with no secrets detected."
-                            fi
-                        '''
-                    }
-                }
+    steps {
+        sh 'rm -f .git/index.lock || true'
+        checkout scm
+        sh '''
+            REPORT_DIR="reports"
+            mkdir -p "${REPORT_DIR}"
+            docker pull ghcr.io/gitleaks/gitleaks:latest
+            
+            set +e
+            echo "Scanning working directory in $WORKSPACE ..."
+            ls -lah "${WORKSPACE}"
+            
+            docker run --rm \
+              -v "${WORKSPACE}:/workspace" \
+              -w /workspace \
+              ghcr.io/gitleaks/gitleaks:latest dir \
+              --source=/workspace \
+              --verbose \
+              --report-path=/workspace/reports/gitleaks-report.json \
+              --report-format=json
+            EXIT_CODE=$?
+            set -e
+            
+            if [ "$EXIT_CODE" -ne 0 ]; then
+                echo "🛑 GitLeaks scan detected secrets. Please review reports/gitleaks-report.json"
+                exit 1
+            else
+                echo "✅ GitLeaks scan passed with no secrets detected."
+            fi
+        '''
+    }
+}
             }
         }
 
