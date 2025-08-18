@@ -40,14 +40,17 @@ pipeline {
             
             docker run --rm \
               -v "${WORKSPACE}:/workspace" \
-              trufflesecurity/trufflehog:latest git \
-              --json --no-verification file://workspace > reports/trufflehog-report.json
+              -w /workspace \
+              trufflesecurity/trufflehog:latest filesystem \
+              --json --no-verification --results=verified,unknown,unverified . > reports/trufflehog-report.json
             EXIT_CODE=$?
             set -e
             
+            echo "TruffleHog scan results:"
+            cat reports/trufflehog-report.json || echo "Report file not found"
+            
             if [ "$EXIT_CODE" -ne 0 ]; then
                 echo "🛑 TruffleHog scan detected secrets. Please review reports/trufflehog-report.json"
-                cat reports/trufflehog-report.json || echo "Report file not found"
             else
                 echo "✅ TruffleHog scan passed with no secrets detected."
             fi
