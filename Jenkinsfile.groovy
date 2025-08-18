@@ -38,18 +38,21 @@ pipeline {
                     steps {
                         checkout scm
                         script {
-                            // Ensure full git history and run scan
-                            sh 'git fetch --unshallow || echo "Already full clone"'
-                            sh 'ls -la .git || echo "No .git directory"'
+                            // Create reports directory
+                            sh 'mkdir -p reports'
                             
+                            // Pull the latest Gitleaks image
+                            sh 'docker pull ghcr.io/gitleaks/gitleaks:latest'
+                            
+                            // Run scan, capturing the exit code without failing the pipeline immediately.
                             def scanResult = sh(
                                 script: """
-                                docker run --rm \\
-                                    -v "${WORKSPACE}:/repo" \\
-                                    -w /repo \\
+                                docker run --rm --user "\$(id -u):\$(id -g)" \\
+                                    -v "${WORKSPACE}:/scan" \\
+                                    -e GIT_DISCOVERY_ACROSS_FILESYSTEM=true \\
                                     ghcr.io/gitleaks/gitleaks:latest \\
-                                    detect --source=. \\
-                                    --report-path=gitleaks-report.json \\
+                                    detect --source=/scan \\
+                                    --report-path=/scan/reports/gitleaks-report.json \\
                                     --report-format=json \\
                                     --verbose
                                 exit \$?
@@ -61,13 +64,10 @@ pipeline {
                             if (scanResult != 0) {
                                 currentBuild.result = 'UNSTABLE'
                                 echo '🛑 Gitleaks scan detected potential secrets! Review the report.'
+                                archiveArtifacts artifacts: 'reports/gitleaks-report.json', allowEmptyArchive: true
                                 
-                                if (fileExists('gitleaks-report.json')) {
-                                    archiveArtifacts artifacts: 'gitleaks-report.json'
-                                    sh 'cat gitleaks-report.json'
-                                } else {
-                                    echo 'Report file not found'
-                                }
+                                // Print formatted JSON report to console (requires jq on the agent)
+                                sh 'jq . reports/gitleaks-report.json || cat reports/gitleaks-report.json'
                             } else {
                                 echo '✅ Gitleaks scan passed with no secrets detected.'
                             }
