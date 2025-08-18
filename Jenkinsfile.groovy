@@ -36,6 +36,8 @@ pipeline {
                 }
                 stage('Gitleaks Scan') {
                     steps {
+                        // Clean up any existing Git locks
+                        sh 'rm -f .git/index.lock || true'
                         checkout scm
                         script {
                             // Create reports directory
@@ -81,6 +83,8 @@ pipeline {
         // This stage runs after the parallel checks are successful.
         stage('Build and Push Docker Image') {
             steps {
+                // Clean workspace before build
+                sh 'rm -f .git/index.lock || true'
                 script {
                     def imageName = "${env.DOCKER_USER}/pygoat"
                     def customImage = docker.build("${imageName}:${env.IMAGE_TAG}", '.')
