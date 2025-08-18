@@ -47,9 +47,8 @@ pipeline {
                             set +e
                             docker run --rm \\
                                 -v "${WORKSPACE}:/scan" \\
-                                --entrypoint sh \\
                                 zricethezav/gitleaks:latest \\
-                                -c "mkdir -p /scan/reports && gitleaks detect --source=/scan --report-path=/scan/$REPORT_DIR/gitleaks-report.json --report-format=json"
+                                sh -c "mkdir -p /scan/reports && gitleaks detect --source=/scan --report-path=/scan/$REPORT_DIR/gitleaks-report.json --report-format=json"
                             EXIT_CODE=$?
                             set -e
                             
