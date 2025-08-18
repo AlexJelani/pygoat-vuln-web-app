@@ -29,7 +29,7 @@ pipeline {
         sh '''
             REPORT_DIR="reports"
             mkdir -p "${REPORT_DIR}"
-            docker pull ghcr.io/gitleaks/gitleaks:latest
+            docker pull zricethezav/gitleaks:latest
             
             set +e
             echo "Scanning working directory in $WORKSPACE ..."
@@ -37,7 +37,7 @@ pipeline {
             docker run --rm \
               -v "${WORKSPACE}:/workspace" \
               -w /workspace \
-              ghcr.io/gitleaks/gitleaks:latest dir \
+              zricethezav/gitleaks:latest dir \
               --source=/workspace \
               --verbose \
               --report-path=/workspace/reports/gitleaks-report.json \
