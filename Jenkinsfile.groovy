@@ -36,11 +36,13 @@ pipeline {
             
             set +e
             echo "Scanning working directory in $WORKSPACE ..."
+            ls -la "${WORKSPACE}"
             
             docker run --rm \
               -v "${WORKSPACE}:/workspace" \
+              -w /workspace \
               trufflesecurity/trufflehog:latest filesystem \
-              --json --no-verification /workspace > reports/trufflehog-report.json
+              --json --no-verification . > reports/trufflehog-report.json
             EXIT_CODE=$?
             set -e
             
