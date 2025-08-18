@@ -48,16 +48,13 @@ pipeline {
                             docker run --rm \\
                                 -v "${WORKSPACE}:/scan" \\
                                 zricethezav/gitleaks:latest \\
-                                detect --source=/scan --report-path=/scan/${REPORT_DIR}/gitleaks-report.json --report-format=json --verbose
+                                sh -c "mkdir -p /scan/reports && gitleaks detect --source=/scan --report-path=/scan/$REPORT_DIR/gitleaks-report.json --report-format=json"
                             EXIT_CODE=$?
                             set -e
                             
-                            if [ "$EXIT_CODE" -eq 1 ]; then
+                            if [ "$EXIT_CODE" -ne 0 ]; then
                                 echo "🛑 GitLeaks scan detected secrets. Please review gitleaks-report.json"
                                 exit 1
-                            elif [ "$EXIT_CODE" -ne 0 ]; then
-                                echo "🔥 GitLeaks scan failed with exit code ${EXIT_CODE}. Check the logs for details."
-                                exit ${EXIT_CODE}
                             else
                                 echo "✅ GitLeaks scan passed with no secrets detected."
                             fi
