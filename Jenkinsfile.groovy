@@ -41,8 +41,7 @@ pipeline {
               -v "${WORKSPACE}:/workspace" \
               -w /workspace \
               trufflesecurity/trufflehog:latest filesystem \
-              --directory=/workspace \
-              --json > reports/trufflehog-report.json
+              --json /workspace > reports/trufflehog-report.json
             EXIT_CODE=$?
             set -e
             
