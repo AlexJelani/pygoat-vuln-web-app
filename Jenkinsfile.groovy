@@ -93,6 +93,7 @@ pipeline {
             steps {
                 // Clean workspace before build
                 sh 'rm -f .git/index.lock || true'
+                checkout scm
                 script {
                     def imageName = "${env.DOCKER_USER}/pygoat"
                     def customImage = docker.build("${imageName}:${env.IMAGE_TAG}", '.')
