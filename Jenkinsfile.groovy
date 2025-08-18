@@ -40,9 +40,8 @@ pipeline {
             
             docker run --rm \
               -v "${WORKSPACE}:/workspace" \
-              -w /workspace \
-              trufflesecurity/trufflehog:latest filesystem \
-              --json --no-verification . > reports/trufflehog-report.json
+              trufflesecurity/trufflehog:latest git \
+              --json --no-verification file://workspace > reports/trufflehog-report.json
             EXIT_CODE=$?
             set -e
             
