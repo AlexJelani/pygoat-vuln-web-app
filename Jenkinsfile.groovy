@@ -78,18 +78,6 @@ pipeline {
             }
         }
 
-        stage('Build and Push Docker Image') {
-            steps {
-                sh 'rm -f .git/index.lock || true'
-                checkout scm
-                script {
-                    def imageName = "${env.DOCKER_USER}/pygoat"
-                    def customImage = docker.build("${imageName}:${env.IMAGE_TAG}", '.')
-                    docker.withRegistry("https://registry.hub.docker.com", env.DOCKER_CREDENTIALS_ID) {
-                        customImage.push()
-                    }
-                }
-            }
-        }
+
     }
 }
