@@ -39,31 +39,27 @@ pipeline {
                         // Clean up any existing Git locks
                         sh 'rm -f .git/index.lock || true'
                         checkout scm
-                        script {
-                            // Pull the latest Gitleaks image
-                            sh 'docker pull ghcr.io/gitleaks/gitleaks:latest'
+                        sh '''
+                            REPORT_DIR="reports"
+                            mkdir -p "${REPORT_DIR}"
+                            docker pull zricethezav/gitleaks:latest
                             
-                            // Run scan, capturing the exit code without failing the pipeline immediately.
-                            def scanResult = sh(
-                                script: """
-                                docker run --rm \\
-                                    -v "${WORKSPACE}:/scan" \\
-                                    -e GIT_DISCOVERY_ACROSS_FILESYSTEM=true \\
-                                    ghcr.io/gitleaks/gitleaks:latest \\
-                                    detect --source=/scan --verbose
-                                exit \$?
-                                """,
-                                returnStatus: true
-                            )
+                            set +e
+                            docker run --rm \\
+                                -v "${WORKSPACE}:/scan" \\
+                                zricethezav/gitleaks:latest detect --source=/scan \\
+                                --report-path=/scan/$REPORT_DIR/gitleaks-report.json \\
+                                --report-format=json
+                            EXIT_CODE=$?
+                            set -e
                             
-                            // Process results based on the exit code
-                            if (scanResult != 0) {
-                                currentBuild.result = 'UNSTABLE'
-                                echo '🛑 Gitleaks scan detected potential secrets! Check the scan output above for details.'
-                            } else {
-                                echo '✅ Gitleaks scan passed with no secrets detected.'
-                            }
-                        }
+                            if [ "$EXIT_CODE" -ne 0 ]; then
+                                echo "🛑 GitLeaks scan detected secrets. Please review gitleaks-report.json"
+                                exit 1
+                            else
+                                echo "✅ GitLeaks scan passed with no secrets detected."
+                            fi
+                        '''
                     }
                 }
             }
