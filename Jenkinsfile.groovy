@@ -6,7 +6,7 @@ pipeline {
         DOCKER_USER           = 'alexjelani13'
         IMAGE_TAG             = 'latest'
         DEFECTDOJO_URL        = 'http://131.186.56.105:8083'
-        DEFECTDOJO_TOKEN      = credentials('defectdojo-token')
+        DEFECTDOJO_TOKEN      = credentials('defectdojo-api-token')
         DEFECTDOJO_ENGAGEMENT_ID = '1'
     }
 
