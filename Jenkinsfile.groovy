@@ -11,62 +11,62 @@ pipeline {
     }
 
     stages {
-        stage('Quality Checks') {
-            parallel {
-                stage('Run Tests') {
-                    steps {
-                        sh 'rm -f .git/index.lock || true'
-                        checkout scm
-                        sh '''
-                            apt-get update && apt-get install -y python3-venv libpq-dev python3-dev gcc || true
-                            python3 -m venv venv
-                            . venv/bin/activate
-                            pip install -r requirements.txt
-                            python manage.py test
-                        '''
-                    }
-                }
-                stage('Git-Secret Scan') {
-    steps {
-        sh 'rm -f .git/index.lock || true'
-        checkout scm
-        sh '''
-            REPORT_DIR="reports"
-            mkdir -p "${REPORT_DIR}"
-            
-            # Install git-secret if not available
-            if ! command -v git-secret &> /dev/null; then
-                echo "Installing git-secret..."
-                apt-get update && apt-get install -y git-secret || true
-            fi
-            
-            # Check for encrypted files
-            if git-secret list &> /dev/null; then
-                echo "Found encrypted secrets, checking status..."
-                git-secret whoknows > reports/git-secret-report.txt
-                git-secret list >> reports/git-secret-report.txt
-                echo "✅ Git-secret scan completed. Check reports/git-secret-report.txt"
-            else
-                echo "No git-secret configuration found" > reports/git-secret-report.txt
-                echo "✅ No git-secret setup detected"
-            fi
-        '''
-    }
-}
-                stage('Bandit SAST') {
-    steps {
-        sh 'rm -f .git/index.lock || true'
-        checkout scm
-        sh '''
-            mkdir -p reports
-            python3 -m venv venv
-            . venv/bin/activate
-            pip install bandit
-            bandit -r . -f json -o reports/bandit-report.json || true
-            echo "✅ Bandit SAST scan completed"
-        '''
-    }
-}
+        stage('Run Tests') {
+            steps {
+                sh 'rm -f .git/index.lock || true'
+                checkout scm
+                sh '''
+                    apt-get update && apt-get install -y python3-venv libpq-dev python3-dev gcc || true
+                    python3 -m venv venv
+                    . venv/bin/activate
+                    pip install -r requirements.txt
+                    python manage.py test
+                '''
+            }
+        }
+        
+        stage('Git-Secret Scan') {
+            steps {
+                sh 'rm -f .git/index.lock || true'
+                checkout scm
+                sh '''
+                    mkdir -p reports
+                    
+                    if ! command -v git-secret &> /dev/null; then
+                        echo "Installing git-secret..."
+                        apt-get update && apt-get install -y git-secret || true
+                    fi
+                    
+                    if command -v git-secret &> /dev/null; then
+                        if git-secret list &> /dev/null; then
+                            echo "Found encrypted secrets, checking status..."
+                            git-secret whoknows > reports/git-secret-report.txt
+                            git-secret list >> reports/git-secret-report.txt
+                            echo "✅ Git-secret scan completed"
+                        else
+                            echo "No git-secret configuration found" > reports/git-secret-report.txt
+                            echo "✅ No git-secret setup detected"
+                        fi
+                    else
+                        echo "git-secret not available" > reports/git-secret-report.txt
+                        echo "⚠️ git-secret installation failed"
+                    fi
+                '''
+            }
+        }
+        
+        stage('Bandit SAST') {
+            steps {
+                sh 'rm -f .git/index.lock || true'
+                checkout scm
+                sh '''
+                    mkdir -p reports
+                    python3 -m venv venv
+                    . venv/bin/activate
+                    pip install bandit
+                    bandit -r . -f json -o reports/bandit-report.json || true
+                    echo "✅ Bandit SAST scan completed"
+                '''
             }
         }
 
