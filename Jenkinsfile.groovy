@@ -15,6 +15,7 @@ pipeline {
             parallel {
                 stage('Run Tests') {
                     steps {
+                        sh 'rm -f .git/index.lock || true'
                         checkout scm
                         sh '''
                             apt-get update && apt-get install -y python3-venv libpq-dev python3-dev gcc || true
@@ -27,6 +28,7 @@ pipeline {
                 }
                 stage('Git-Secret Scan') {
     steps {
+        sh 'rm -f .git/index.lock || true'
         checkout scm
         sh '''
             REPORT_DIR="reports"
@@ -53,6 +55,7 @@ pipeline {
 }
                 stage('Bandit SAST') {
     steps {
+        sh 'rm -f .git/index.lock || true'
         checkout scm
         sh '''
             mkdir -p reports
