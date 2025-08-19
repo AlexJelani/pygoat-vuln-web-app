@@ -42,8 +42,7 @@ pipeline {
               zricethezav/gitleaks:latest detect \
               --source=/workspace \
               --verbose \
-              --report-path=/workspace/reports/gitleaks-report.json \
-              --report-format=json
+              --report-format=json > reports/gitleaks-report.json
             EXIT_CODE=$?
             set -e
             
