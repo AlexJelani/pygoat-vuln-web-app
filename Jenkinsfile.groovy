@@ -25,33 +25,30 @@ pipeline {
             }
         }
         
-        stage('Git-Secret Scan') {
+        stage('Gitleaks Secret Scan') {
             steps {
                 sh 'rm -f .git/index.lock || true'
                 checkout scm
                 sh '''
                     mkdir -p reports
                     
-                    if ! command -v git-secret &> /dev/null; then
-                        echo "Installing git-secret..."
-                        apt-get update && apt-get install -y git-secret || true
-                    fi
+                    echo "Running Gitleaks secret detection..."
+                    docker pull zricethezav/gitleaks:latest
                     
-                    if command -v git-secret &> /dev/null; then
-                        if [ -d ".gitsecret" ]; then
-                            echo "Found git-secret configuration, checking status..."
-                            git-secret whoknows > reports/git-secret-report.txt || true
-                            git-secret list >> reports/git-secret-report.txt || true
-                            echo "✅ Git-secret scan completed"
-                        else
-                            echo "Initializing git-secret..."
-                            git-secret init || true
-                            echo "Git-secret initialized, no secrets configured yet" > reports/git-secret-report.txt
-                            echo "✅ Git-secret initialized"
-                        fi
+                    docker run --rm \
+                      -v "${WORKSPACE}:/workspace" \
+                      -w /workspace \
+                      zricethezav/gitleaks:latest detect \
+                      --source . \
+                      --report-format json \
+                      --report-path /workspace/reports/gitleaks-report.json \
+                      --no-git || true
+                    
+                    if [ -f "reports/gitleaks-report.json" ]; then
+                        echo "✅ Gitleaks scan completed. Check reports/gitleaks-report.json"
                     else
-                        echo "git-secret not available" > reports/git-secret-report.txt
-                        echo "⚠️ git-secret installation failed"
+                        echo "No secrets detected" > reports/gitleaks-report.json
+                        echo "✅ No secrets found"
                     fi
                 '''
             }
