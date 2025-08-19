@@ -41,7 +41,7 @@ pipeline {
               -v "${WORKSPACE}:/workspace" \
               -w /workspace \
               zricethezav/gitleaks:latest \
-              "mkdir -p /workspace/reports && gitleaks dir --source=/workspace --verbose --report-path=/workspace/reports/gitleaks-report.json --report-format=json"
+              mkdir -p /workspace/reports && gitleaks dir --source=/workspace --verbose --report-path=/workspace/reports/gitleaks-report.json --report-format=json
             EXIT_CODE=$?
             set -e
             
