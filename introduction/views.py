@@ -1152,12 +1152,14 @@ def auth_failure_lab2(request):
             print(e)
             return render(request,"Lab_2021/A7_auth_failure/lab2.html",{"success":False, "failure":True})
 
-## Hardcoed user table for demonstration purpose only
+## Hardcoded user table for demonstration purpose only
+## WARNING: These are intentional test password hashes for security training - NOT real secrets
+## These values are used in PyGoat's authentication failure lab exercises
 USER_A7_LAB3 = {
-    "User1":{"userid":"1", "username":"User1", "password": "491a2800b80719ea9e3c89ca5472a8bda1bdd1533d4574ea5bd85b70a8e93be0"},
-    "User2":{"userid":"2", "username":"User2", "password": "c577e95bf729b94c30a878d01155693a9cdddafbb2fe0d52143027474ecb91bc"},
-    "User3":{"userid":"3", "username":"User3", "password": "5a91a66f0c86b5435fe748706b99c17e6e54a17e03c2a3ef8d0dfa918db41cf6"},
-    "User4":{"userid":"4", "username":"User4", "password": "6046bc3337728a60967a151ee584e4fd7c53740a49485ebdc38cac42a255f266"}
+    "User1":{"userid":"1", "username":"User1", "password": "491a2800b80719ea9e3c89ca5472a8bda1bdd1533d4574ea5bd85b70a8e93be0"},  # Test hash
+    "User2":{"userid":"2", "username":"User2", "password": "c577e95bf729b94c30a878d01155693a9cdddafbb2fe0d52143027474ecb91bc"},  # Test hash
+    "User3":{"userid":"3", "username":"User3", "password": "5a91a66f0c86b5435fe748706b99c17e6e54a17e03c2a3ef8d0dfa918db41cf6"},  # Test hash
+    "User4":{"userid":"4", "username":"User4", "password": "6046bc3337728a60967a151ee584e4fd7c53740a49485ebdc38cac42a255f266"}   # Test hash
 }
 
 # USER_A7_LAB3 = {
