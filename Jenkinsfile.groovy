@@ -40,7 +40,8 @@ pipeline {
             docker run --rm \
               -v "${WORKSPACE}:/workspace" \
               -w /workspace \
-              zricethezav/gitleaks:latest detect --source=/workspace \
+              zricethezav/gitleaks:latest dir \
+              --source=/workspace \
               --report-path=/workspace/$REPORT_DIR/gitleaks-report.json \
               --report-format=json
             EXIT_CODE=$?
