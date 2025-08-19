@@ -39,9 +39,10 @@ pipeline {
                       -v "${WORKSPACE}:/workspace" \
                       -w /workspace \
                       zricethezav/gitleaks:latest detect \
-                      --source . \
+                      --source=. \
                       --report-format json \
                       --report-path gitleaks-report.json \
+                      --exit-code=0 \
                       --no-git || true
                     
                     # Move report to reports directory
