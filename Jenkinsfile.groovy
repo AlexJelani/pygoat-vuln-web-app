@@ -41,8 +41,11 @@ pipeline {
                       zricethezav/gitleaks:latest detect \
                       --source . \
                       --report-format json \
-                      --report-path /workspace/reports/gitleaks-report.json \
+                      --report-path gitleaks-report.json \
                       --no-git || true
+                    
+                    # Move report to reports directory
+                    mv gitleaks-report.json reports/ || true
                     
                     if [ -f "reports/gitleaks-report.json" ]; then
                         echo "✅ Gitleaks scan completed. Check reports/gitleaks-report.json"
