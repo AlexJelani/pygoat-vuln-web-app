@@ -48,9 +48,6 @@ pipeline {
                     EXIT_CODE=$?
                     set -e
                     
-                    # Move report to reports directory
-                    mv gitleaks-report.json reports/ || true
-                    
                     if [ "$EXIT_CODE" -ne 0 ]; then
                         echo "🛑 GitLeaks scan detected secrets. Please review reports/gitleaks-report.json"
                         cat reports/gitleaks-report.json || echo "Report file not found"
