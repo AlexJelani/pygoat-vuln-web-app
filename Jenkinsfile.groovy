@@ -41,7 +41,7 @@ pipeline {
                       -v "${WORKSPACE}:/workspace" \
                       -w /workspace \
                       zricethezav/gitleaks:latest dir \
-                      --source=/workspace \
+                      --path=/workspace \
                       --verbose \
                       --report-path=/workspace/reports/gitleaks-report.json \
                       --report-format=json
