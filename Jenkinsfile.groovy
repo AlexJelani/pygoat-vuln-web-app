@@ -25,34 +25,34 @@ pipeline {
             }
         }
         
-        stage('Gitleaks Secret Scan') {
+        stage('Gitleaks Scan') {
             steps {
                 sh 'rm -f .git/index.lock || true'
                 checkout scm
                 sh '''
-                    mkdir -p reports
-                    
-                    echo "Running Gitleaks secret detection..."
+                    REPORT_DIR="reports"
+                    mkdir -p "${REPORT_DIR}"
                     docker pull zricethezav/gitleaks:latest
+                    
+                    set +e
+                    echo "Scanning working directory in $WORKSPACE ..."
                     
                     docker run --rm \
                       -v "${WORKSPACE}:/workspace" \
                       -w /workspace \
-                      zricethezav/gitleaks:latest detect \
-                      --source /workspace \
-                      --report-format json \
-                      --report-path gitleaks-report.json \
-                      --no-git \
-                      --verbose || true
+                      zricethezav/gitleaks:latest dir \
+                      --source=/workspace \
+                      --verbose \
+                      --report-path=/workspace/reports/gitleaks-report.json \
+                      --report-format=json
+                    EXIT_CODE=$?
+                    set -e
                     
-                    # Move report to reports directory
-                    mv gitleaks-report.json reports/ || true
-                    
-                    if [ -f "reports/gitleaks-report.json" ]; then
-                        echo "✅ Gitleaks scan completed. Check reports/gitleaks-report.json"
+                    if [ "$EXIT_CODE" -ne 0 ]; then
+                        echo "🛑 GitLeaks scan detected secrets. Please review reports/gitleaks-report.json"
+                        cat reports/gitleaks-report.json || echo "Report file not found"
                     else
-                        echo "No secrets detected" > reports/gitleaks-report.json
-                        echo "✅ No secrets found"
+                        echo "✅ GitLeaks scan passed with no secrets detected."
                     fi
                 '''
             }
