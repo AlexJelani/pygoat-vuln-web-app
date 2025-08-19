@@ -38,8 +38,8 @@ pipeline {
                     fi
                     
                     if command -v git-secret &> /dev/null; then
-                        if git-secret list &> /dev/null 2>&1; then
-                            echo "Found encrypted secrets, checking status..."
+                        if [ -d ".gitsecret" ]; then
+                            echo "Found git-secret configuration, checking status..."
                             git-secret whoknows > reports/git-secret-report.txt || true
                             git-secret list >> reports/git-secret-report.txt || true
                             echo "✅ Git-secret scan completed"
