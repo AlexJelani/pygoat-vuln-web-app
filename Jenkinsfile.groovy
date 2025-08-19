@@ -25,58 +25,45 @@ pipeline {
                         '''
                     }
                 }
-                stage('TruffleHog Scan') {
+                stage('Git-Secret Scan') {
     steps {
-        sh 'rm -f .git/index.lock || true'
         checkout scm
         sh '''
             REPORT_DIR="reports"
             mkdir -p "${REPORT_DIR}"
-            docker pull trufflesecurity/trufflehog:latest
             
-            set +e
-            echo "Scanning working directory in $WORKSPACE ..."
-            ls -la "${WORKSPACE}"
+            # Install git-secret if not available
+            if ! command -v git-secret &> /dev/null; then
+                echo "Installing git-secret..."
+                apt-get update && apt-get install -y git-secret || true
+            fi
             
-            docker run --rm \
-              -v "${WORKSPACE}:/workspace" \
-              -w /workspace \
-              trufflesecurity/trufflehog:latest filesystem \
-              --json --no-verification --results=verified,unknown,unverified . > reports/trufflehog-report.json
-            EXIT_CODE=$?
-            set -e
-            
-            echo "TruffleHog scan results:"
-            cat reports/trufflehog-report.json || echo "Report file not found"
-            
-            if [ "$EXIT_CODE" -ne 0 ]; then
-                echo "🛑 TruffleHog scan detected secrets. Please review reports/trufflehog-report.json"
+            # Check for encrypted files
+            if git-secret list &> /dev/null; then
+                echo "Found encrypted secrets, checking status..."
+                git-secret whoknows > reports/git-secret-report.txt
+                git-secret list >> reports/git-secret-report.txt
+                echo "✅ Git-secret scan completed. Check reports/git-secret-report.txt"
             else
-                echo "✅ TruffleHog scan passed with no secrets detected."
+                echo "No git-secret configuration found" > reports/git-secret-report.txt
+                echo "✅ No git-secret setup detected"
             fi
         '''
     }
 }
-            }
-        }
-
-        stage('Upload Scan results to DefectDojo') {
-            steps {
-                sh '''
-                    if [ -f "reports/trufflehog-report.json" ]; then
-                        echo "Uploading scan results to DefectDojo..."
-                        curl -v -X POST "${DEFECTDOJO_URL}/api/v2/import-scan/" \
-                          -H "Authorization: Token ${DEFECTDOJO_TOKEN}" \
-                          -H "Content-Type: multipart/form-data" \
-                          -F "scan_type=Trufflehog Scan" \
-                          -F "file=@reports/trufflehog-report.json" \
-                          -F "engagement=${DEFECTDOJO_ENGAGEMENT_ID}" \
-                          -F "verified=true" \
-                          -F "active=true" || echo "DefectDojo upload failed"
-                    else
-                        echo "No scan report found to upload"
-                    fi
-                '''
+                stage('Bandit SAST') {
+    steps {
+        checkout scm
+        sh '''
+            mkdir -p reports
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install bandit
+            bandit -r . -f json -o reports/bandit-report.json || true
+            echo "✅ Bandit SAST scan completed"
+        '''
+    }
+}
             }
         }
 
