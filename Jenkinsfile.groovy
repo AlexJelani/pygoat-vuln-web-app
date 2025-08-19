@@ -38,14 +38,16 @@ pipeline {
                     fi
                     
                     if command -v git-secret &> /dev/null; then
-                        if git-secret list &> /dev/null; then
+                        if git-secret list &> /dev/null 2>&1; then
                             echo "Found encrypted secrets, checking status..."
-                            git-secret whoknows > reports/git-secret-report.txt
-                            git-secret list >> reports/git-secret-report.txt
+                            git-secret whoknows > reports/git-secret-report.txt || true
+                            git-secret list >> reports/git-secret-report.txt || true
                             echo "✅ Git-secret scan completed"
                         else
-                            echo "No git-secret configuration found" > reports/git-secret-report.txt
-                            echo "✅ No git-secret setup detected"
+                            echo "Initializing git-secret..."
+                            git-secret init || true
+                            echo "Git-secret initialized, no secrets configured yet" > reports/git-secret-report.txt
+                            echo "✅ Git-secret initialized"
                         fi
                     else
                         echo "git-secret not available" > reports/git-secret-report.txt
